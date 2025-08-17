@@ -1,15 +1,25 @@
-# neotui
+# neoTUI
 
-To install dependencies:
+A modern, minimal network toolkit written in Python with a bright, colorful CLI.
 
-```bash
-bun install
-```
-
-To run:
+## Setup
 
 ```bash
-bun run index.ts
+pip install -r requirements.txt
 ```
 
-This project was created using `bun init` in bun v1.2.20. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Usage
+
+```bash
+python app.py --help
+```
+
+### Examples
+
+```bash
+python app.py ping google.com
+python app.py dns example.com
+python app.py http https://example.com
+python app.py trace example.com
+python app.py scan localhost 1-1024
+```
