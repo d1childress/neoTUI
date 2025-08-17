@@ -2,6 +2,8 @@
 
 A modern, minimal network toolkit written in Python with a bright, colorful CLI.
 
+<img width="1209" height="290" alt="CleanShot 2025-08-17 at 18 32 15" src="https://github.com/user-attachments/assets/0f7706f5-775b-47b5-aa7a-c2fa54b26362" />
+
 ## Installation
 
 1. Ensure you have Python 3.11 or newer.
