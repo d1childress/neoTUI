@@ -1,0 +1,15 @@
+# Sample hosts file for batch operations
+# Lines starting with # are ignored
+
+# Popular websites
+google.com
+github.com
+stackoverflow.com
+
+# DNS servers
+8.8.8.8
+1.1.1.1
+
+# For port scanning (host:ports format)
+localhost:80,443,8080
+scanme.nmap.org:22,80,443
