@@ -81,7 +81,8 @@ class ThemeManager:
                 "success": "bright_green",
                 "warning": "bright_yellow",
                 "error": "bright_red",
-                "info": "electric_blue",
+                # rich doesn't support 'electric_blue'; use hex value instead
+                "info": "#7df9ff",
                 "dim": "dim bright_white",
                 "border": "bright_cyan"
             }
