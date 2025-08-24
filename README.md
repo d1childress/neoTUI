@@ -23,7 +23,8 @@
 
 ## 📸 Preview
 
-<img width="1209" height="290" alt="CleanShot 2025-08-17 at 18 32 15" src="https://github.com/user-attachments/assets/0f7706f5-775b-47b5-aa7a-c2fa54b26362" />
+<img width="1212" height="827" alt="CleanShot 2025-08-24 at 17 51 25" src="https://github.com/user-attachments/assets/fd0b0381-0a20-484c-98f1-0fb94f72f73c" />
+
 
 ## ✨ Features
 
@@ -382,7 +383,6 @@ python3 neoTUI.py --version
 - **v1.x**: Initial release with basic ping, DNS, and HTTP testing
 
 ---
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
