@@ -1,6 +1,27 @@
 # neoTUI 🚀
 
-A modern, powerful network toolkit written in Python with a beautiful, colorful CLI interface.
+[![Version](https://img.shields.io/badge/version-3.0-blue.svg)](https://github.com/d1childress/neoTUI)
+[![Python](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-cross--platform-lightgrey.svg)]()
+
+**neoTUI** is a modern, powerful network diagnostic toolkit written in Python featuring an intuitive command-line interface with rich visual output. Designed for network administrators, developers, and security professionals who need reliable network analysis tools with beautiful, informative displays.
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Detailed Usage](#-detailed-usage)
+- [Batch Operations](#batch-operations)
+- [Configuration](#-configuration-options)
+- [Export Formats](#-export-formats)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+## 📸 Preview
 
 <img width="1209" height="290" alt="CleanShot 2025-08-17 at 18 32 15" src="https://github.com/user-attachments/assets/0f7706f5-775b-47b5-aa7a-c2fa54b26362" />
 
@@ -17,23 +38,70 @@ A modern, powerful network toolkit written in Python with a beautiful, colorful 
 - **🎨 Beautiful Output** - Rich colored tables and progress indicators
 - **💡 Smart Error Handling** - Helpful error messages with suggestions
 
+## 📋 Requirements
+
+### System Requirements
+- **Python**: 3.11 or newer
+- **Operating System**: Cross-platform (Windows, macOS, Linux)
+- **Network Access**: Required for network diagnostic operations
+
+### Python Dependencies
+- `typer[all]` - Modern CLI framework
+- `rich` - Rich text and beautiful formatting
+- `requests` - HTTP library for web requests
+- `ping3` - Pure Python ping implementation
+- `dnspython` - DNS toolkit
+
+### Optional Requirements
+- **Administrator/Root privileges**: Required for some advanced network operations
+- **ICMP permissions**: Needed for ping functionality on some systems
+
 ## 📦 Installation
 
-1. Ensure you have Python 3.11 or newer.
-2. Clone the repository and change into the project directory:
-   ```bash
-   git clone <repository_url>
-   cd neoTUI
-   ```
-3. (Optional) Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-4. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Option 1: Quick Installation (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/d1childress/neoTUI.git
+cd neoTUI
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
+python3 neoTUI.py --version
+```
+
+### Option 2: Development Installation
+
+For development or isolated environments:
+
+```bash
+# Clone the repository
+git clone https://github.com/d1childress/neoTUI.git
+cd neoTUI
+
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
+python3 neoTUI.py --version
+```
+
+### Troubleshooting Installation
+
+- **Permission Issues**: On some systems, you may need to use `sudo` for ping operations
+- **Python Version**: Ensure you're using Python 3.11+ with `python3 --version`
+- **Dependencies**: If pip fails, try `pip3` or `python3 -m pip`
 
 ## 🚀 Quick Start
 
@@ -184,9 +252,136 @@ Results can be exported in:
 - **JSON**: Structured data with full details
 - **CSV**: Tabular format for spreadsheet analysis
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Permission Denied Errors
+```bash
+# Problem: Permission denied when running ping operations
+# Solution: Run with appropriate privileges
+sudo python3 neoTUI.py ping google.com
+
+# Or add user to appropriate group (Linux)
+sudo setcap cap_net_raw+ep /usr/bin/python3
+```
+
+#### Import Errors
+```bash
+# Problem: Module not found errors
+# Solution: Ensure all dependencies are installed
+pip install -r requirements.txt
+
+# For specific modules:
+pip install typer rich requests ping3 dnspython
+```
+
+#### Slow Performance
+- **Network latency**: Adjust timeout values with `--timeout`
+- **Port scanning**: Reduce thread count with `--threads`
+- **Large batch operations**: Process smaller batches
+
+#### Export Issues
+```bash
+# Problem: Cannot write export files
+# Solution: Check directory permissions
+chmod 755 /path/to/export/directory
+
+# Use absolute paths for export
+python3 neoTUI.py ping google.com --export /full/path/to/results.json
+```
+
+### Platform-Specific Notes
+
+#### Windows
+- Use `python` instead of `python3` in most cases
+- Some operations may require "Run as Administrator"
+- Windows Defender may flag network scanning tools
+
+#### macOS
+- Requires Python 3.11+ from Homebrew or python.org
+- Some network operations may require `sudo`
+- Firewall settings may affect scanning
+
+#### Linux
+- Install Python 3.11+ via package manager
+- May require additional network capabilities
+- Some distributions need `python3-pip` package
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check Python version**: `python3 --version`
+2. **Verify dependencies**: `pip list | grep -E "(typer|rich|requests)"`
+3. **Test basic functionality**: `python3 neoTUI.py --version`
+4. **Review system logs**: Check for network policy restrictions
+5. **Create an issue**: [GitHub Issues](https://github.com/d1childress/neoTUI/issues)
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+We welcome contributions to neoTUI! Whether you're reporting bugs, suggesting features, or submitting code improvements, your help makes the project better.
+
+### Ways to Contribute
+
+- 🐛 **Bug Reports**: Found an issue? [Create an issue](https://github.com/d1childress/neoTUI/issues)
+- 💡 **Feature Requests**: Have an idea? We'd love to hear it!
+- 📖 **Documentation**: Help improve our docs and examples
+- 🧪 **Testing**: Test on different platforms and report compatibility
+- 💻 **Code**: Submit pull requests for bug fixes or new features
+
+### Development Setup
+
+```bash
+# Fork and clone your fork
+git clone https://github.com/YOUR_USERNAME/neoTUI.git
+cd neoTUI
+
+# Create development environment
+python3 -m venv dev-env
+source dev-env/bin/activate  # On Windows: dev-env\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests (if available)
+python3 -m pytest
+
+# Test your changes
+python3 neoTUI.py --version
+```
+
+### Pull Request Guidelines
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Test** your changes thoroughly
+4. **Commit** with clear messages (`git commit -m 'Add amazing feature'`)
+5. **Push** to your branch (`git push origin feature/amazing-feature`)
+6. **Open** a Pull Request
+
+### Code Standards
+
+- Follow existing code style and patterns
+- Include docstrings for new functions
+- Test on multiple platforms when possible
+- Update documentation for new features
+
+## 📋 Changelog
+
+### Version 3.0 (Latest)
+- 🎨 **New Features**: Multiple color themes support
+- 📊 **Enhancement**: ASCII data visualization
+- 🟢 **Improvement**: Smart health indicators
+- 📚 **Feature**: Command history tracking
+- ⚡ **Performance**: Enhanced execution speed
+- 🎯 **Export**: Advanced export options
+
+### Previous Versions
+- **v2.x**: Core network toolkit functionality
+- **v1.x**: Initial release with basic ping, DNS, and HTTP testing
+
+---
 
 ## 📄 License
 
