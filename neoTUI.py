@@ -595,9 +595,10 @@ def ping_host(
             
             progress.update(task, advance=1)
     
+    avg_delay = total_delay / successful if successful > 0 else 0
+
     # Display enhanced statistics
     if successful > 0:
-        avg_delay = total_delay / successful
         packet_loss = ((count - successful) / count) * 100
         
         # Create enhanced statistics table
@@ -678,7 +679,7 @@ def dns(
         TextColumn("[progress.description]{task.description}"),
         console=console
     ) as progress:
-        task = progress.add_task("[cyan]Querying DNS servers...", total=None)
+        task = progress.add_task("[cyan]Querying DNS servers...", total=1)
         
         try:
             # Get IP addresses
@@ -714,7 +715,7 @@ def dns(
                     all_records.append({"type": "IPv6", "address": ip, "reverse_dns": reverse})
                 
                 results["records"] = all_records
-                progress.update(task, completed=100)
+                progress.update(task, advance=1)
                 console.print("\n")
                 console.print(table)
                 
@@ -733,16 +734,17 @@ def dns(
                 ip = socket.gethostbyname(host)
                 console.print(f"[green]Resolved to: {ip}[/]")
                 results["ip_address"] = ip
+                progress.update(task, advance=1)
                 
         except socket.gaierror as e:
-            progress.update(task, completed=100)
+            progress.update(task, advance=1)
             console.print(error_panel(
                 f"DNS resolution failed: {e}",
                 "Check if the hostname is correct and your DNS server is accessible"
             ))
             results["error"] = str(e)
         except Exception as e:
-            progress.update(task, completed=100)
+            progress.update(task, advance=1)
             console.print(error_panel(f"Unexpected error: {e}"))
             results["error"] = str(e)
     
