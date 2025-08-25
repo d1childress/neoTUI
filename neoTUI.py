@@ -5,6 +5,8 @@ import sys
 import json
 import csv
 import statistics
+import platform
+import os
 from typing import List, Optional, Dict, Any, Union
 from pathlib import Path
 from datetime import datetime
@@ -30,6 +32,13 @@ from rich.layout import Layout
 from rich.live import Live
 from rich.tree import Tree
 from rich.bar import Bar
+
+try:
+    import psutil
+    import speedtest
+    SYSTEM_DEPS_AVAILABLE = True
+except ImportError:
+    SYSTEM_DEPS_AVAILABLE = False
 
 app = typer.Typer(
     help="🚀 Modern network toolkit - Fast, colorful, and user-friendly",
@@ -150,6 +159,174 @@ class Config:
         self.save()
 
 config = Config()
+
+# ----- System Information Functions -----
+
+def get_local_ip():
+    """Get local IP address"""
+    try:
+        # Create a socket and connect to a remote server to get local IP
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except Exception:
+        try:
+            # Fallback method
+            hostname = socket.gethostname()
+            return socket.gethostbyname(hostname)
+        except Exception:
+            return "Unknown"
+
+def get_public_ip():
+    """Get public IP address"""
+    try:
+        response = requests.get("https://api.ipify.org", timeout=5)
+        return response.text.strip()
+    except Exception:
+        try:
+            # Fallback service
+            response = requests.get("https://httpbin.org/ip", timeout=5)
+            return response.json().get("origin", "Unknown")
+        except Exception:
+            return "Unknown"
+
+def get_network_interfaces():
+    """Get network interface information"""
+    if not SYSTEM_DEPS_AVAILABLE:
+        return []
+    
+    interfaces = []
+    try:
+        for interface, addrs in psutil.net_if_addrs().items():
+            if interface.startswith('lo'):  # Skip loopback
+                continue
+            
+            ipv4_addr = None
+            for addr in addrs:
+                if addr.family == socket.AF_INET:
+                    ipv4_addr = addr.address
+                    break
+            
+            if ipv4_addr:
+                # Get interface stats
+                stats = psutil.net_if_stats().get(interface)
+                is_up = stats.isup if stats else False
+                speed = f"{stats.speed}Mbps" if stats and stats.speed > 0 else "Unknown"
+                
+                interfaces.append({
+                    "name": interface,
+                    "ip": ipv4_addr,
+                    "status": "Up" if is_up else "Down",
+                    "speed": speed
+                })
+    except Exception:
+        pass
+    
+    return interfaces
+
+def get_internet_speed():
+    """Test internet connection speed"""
+    if not SYSTEM_DEPS_AVAILABLE:
+        return {"download": "N/A", "upload": "N/A", "ping": "N/A", "error": "Dependencies not available"}
+    
+    try:
+        st = speedtest.Speedtest()
+        st.get_best_server()
+        
+        # Test download speed
+        download_speed = st.download() / 1_000_000  # Convert to Mbps
+        
+        # Test upload speed  
+        upload_speed = st.upload() / 1_000_000  # Convert to Mbps
+        
+        # Get ping
+        ping_result = st.results.ping
+        
+        return {
+            "download": f"{download_speed:.1f} Mbps",
+            "upload": f"{upload_speed:.1f} Mbps", 
+            "ping": f"{ping_result:.1f} ms",
+            "server": st.results.server.get("sponsor", "Unknown")
+        }
+    except Exception as e:
+        return {"download": "N/A", "upload": "N/A", "ping": "N/A", "error": str(e)}
+
+def get_system_info():
+    """Get basic system information"""
+    info = {
+        "hostname": socket.gethostname(),
+        "os": platform.system(),
+        "os_version": platform.release(),
+        "architecture": platform.machine(),
+        "python_version": platform.python_version(),
+        "uptime": "N/A"
+    }
+    
+    if SYSTEM_DEPS_AVAILABLE:
+        try:
+            # Get uptime
+            boot_time = psutil.boot_time()
+            uptime_seconds = time.time() - boot_time
+            uptime_str = format_uptime(uptime_seconds)
+            info["uptime"] = uptime_str
+            
+            # Get CPU and memory info
+            info["cpu_percent"] = f"{psutil.cpu_percent(interval=1):.1f}%"
+            info["cpu_cores"] = psutil.cpu_count(logical=False)
+            info["cpu_threads"] = psutil.cpu_count(logical=True)
+            
+            memory = psutil.virtual_memory()
+            info["memory_total"] = format_bytes(memory.total)
+            info["memory_used"] = format_bytes(memory.used)
+            info["memory_percent"] = f"{memory.percent:.1f}%"
+            
+            # Disk info
+            disk = psutil.disk_usage('/')
+            info["disk_total"] = format_bytes(disk.total)
+            info["disk_used"] = format_bytes(disk.used)
+            info["disk_percent"] = f"{(disk.used / disk.total * 100):.1f}%"
+            
+        except Exception:
+            pass
+    
+    return info
+
+def format_uptime(seconds):
+    """Format uptime in human readable format"""
+    days = int(seconds // 86400)
+    hours = int((seconds % 86400) // 3600)
+    minutes = int((seconds % 3600) // 60)
+    
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    elif hours > 0:
+        return f"{hours}h {minutes}m"
+    else:
+        return f"{minutes}m"
+
+def format_bytes(bytes_value):
+    """Format bytes in human readable format"""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if bytes_value < 1024.0:
+            return f"{bytes_value:.1f} {unit}"
+        bytes_value /= 1024.0
+    return f"{bytes_value:.1f} PB"
+
+def get_network_stats():
+    """Get network statistics"""
+    if not SYSTEM_DEPS_AVAILABLE:
+        return {"bytes_sent": "N/A", "bytes_recv": "N/A", "packets_sent": "N/A", "packets_recv": "N/A"}
+    
+    try:
+        stats = psutil.net_io_counters()
+        return {
+            "bytes_sent": format_bytes(stats.bytes_sent),
+            "bytes_recv": format_bytes(stats.bytes_recv),
+            "packets_sent": f"{stats.packets_sent:,}",
+            "packets_recv": f"{stats.packets_recv:,}"
+        }
+    except Exception:
+        return {"bytes_sent": "N/A", "bytes_recv": "N/A", "packets_sent": "N/A", "packets_recv": "N/A"}
 
 # ----- Enhanced UI Helpers -----
 
@@ -1325,26 +1502,165 @@ def history(
         
         console.print(f"[{config.theme_manager.get_color('dim')}]{timestamp}[/] [{config.theme_manager.get_color('info')}]{command}[/] {summary}")
 
+def create_system_dashboard():
+    """Create and display the system dashboard"""
+    console.print(create_gradient_panel("🖥️ System Dashboard", "Gathering system information...", "info"))
+    
+    # Show progress while gathering data
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        # Gather basic system info quickly
+        task1 = progress.add_task("[cyan]Loading system information...", total=None)
+        system_info = get_system_info()
+        local_ip = get_local_ip()
+        progress.update(task1, description="[green]✓ System information loaded")
+        
+        # Get network interfaces
+        task2 = progress.add_task("[cyan]Scanning network interfaces...", total=None)
+        interfaces = get_network_interfaces()
+        progress.update(task2, description="[green]✓ Network interfaces scanned")
+        
+        # Get public IP
+        task3 = progress.add_task("[cyan]Detecting public IP...", total=None)
+        public_ip = get_public_ip()
+        progress.update(task3, description="[green]✓ Public IP detected")
+        
+        # Get network stats
+        task4 = progress.add_task("[cyan]Collecting network statistics...", total=None)
+        network_stats = get_network_stats()
+        progress.update(task4, description="[green]✓ Network statistics collected")
+        
+        # Speed test (optional and slower)
+        task5 = progress.add_task("[cyan]Testing internet speed (this may take a moment)...", total=None)
+        speed_results = get_internet_speed()
+        if "error" not in speed_results:
+            progress.update(task5, description="[green]✓ Internet speed test completed")
+        else:
+            progress.update(task5, description="[yellow]⚠ Internet speed test failed")
+    
+    console.clear()
+    
+    # Create dashboard header
+    console.print(Panel.fit("🚀 neoTUI System Dashboard", style="bold bright_cyan"))
+    
+    # System Information Panel
+    sys_table = Table(show_header=False, box=None, padding=(0, 1))
+    sys_table.add_column("Property", style="cyan", width=15)
+    sys_table.add_column("Value", style="bright_white")
+    
+    sys_table.add_row("🖥️ Hostname", system_info["hostname"])
+    sys_table.add_row("💻 OS", f"{system_info['os']} {system_info['os_version']}")
+    sys_table.add_row("🏗️ Architecture", system_info["architecture"])
+    sys_table.add_row("⏱️ Uptime", system_info["uptime"])
+    
+    if "cpu_percent" in system_info:
+        sys_table.add_row("🔥 CPU Usage", system_info["cpu_percent"])
+        sys_table.add_row("💾 Memory", f"{system_info['memory_percent']} ({system_info['memory_used']}/{system_info['memory_total']})")
+        sys_table.add_row("💿 Disk", f"{system_info['disk_percent']} ({system_info['disk_used']}/{system_info['disk_total']})")
+        sys_table.add_row("🧠 CPU Cores", f"{system_info['cpu_cores']} cores / {system_info['cpu_threads']} threads")
+    
+    # IP Information
+    ip_table = Table(show_header=False, box=None, padding=(0, 1))
+    ip_table.add_column("Property", style="cyan", width=12)
+    ip_table.add_column("Value", style="bright_white")
+    
+    ip_table.add_row("🏠 Local IP", local_ip)
+    ip_table.add_row("🌍 Public IP", public_ip)
+    
+    # Create side-by-side layout using Columns
+    top_panels = Columns([
+        Panel(sys_table, title="🖥️ System Information", border_style="cyan"),
+        Panel(ip_table, title="🌐 IP Information", border_style="cyan")
+    ])
+    console.print(top_panels)
+    
+    # Speed Test Results
+    speed_table = Table(show_header=False, box=None, padding=(0, 1))
+    speed_table.add_column("Metric", style="cyan", width=12)
+    speed_table.add_column("Value", style="bright_white")
+    
+    if "error" not in speed_results:
+        speed_table.add_row("📥 Download", speed_results["download"])
+        speed_table.add_row("📤 Upload", speed_results["upload"])
+        speed_table.add_row("🏓 Ping", speed_results["ping"])
+        if "server" in speed_results:
+            speed_table.add_row("🖥️ Server", speed_results["server"])
+        panel_title = "⚡ Internet Speed"
+        panel_style = "green"
+    else:
+        speed_table.add_row("Status", "[red]Test Failed[/]")
+        speed_table.add_row("Reason", speed_results.get("error", "Unknown"))
+        panel_title = "⚡ Internet Speed"
+        panel_style = "yellow"
+    
+    # Network Statistics
+    stats_table = Table(show_header=False, box=None, padding=(0, 1))
+    stats_table.add_column("Metric", style="cyan", width=12)
+    stats_table.add_column("Value", style="bright_white")
+    
+    stats_table.add_row("📤 Sent", network_stats["bytes_sent"])
+    stats_table.add_row("📥 Received", network_stats["bytes_recv"])
+    stats_table.add_row("📦 Packets Out", network_stats["packets_sent"])
+    stats_table.add_row("📫 Packets In", network_stats["packets_recv"])
+    
+    # Second row of panels
+    middle_panels = Columns([
+        Panel(speed_table, title=panel_title, border_style=panel_style),
+        Panel(stats_table, title="📊 Network Statistics", border_style="cyan")
+    ])
+    console.print(middle_panels)
+    
+    # Network Interfaces
+    if interfaces:
+        int_table = Table(show_header=True, box=ROUNDED)
+        int_table.add_column("Interface", style="cyan")
+        int_table.add_column("IP Address", style="bright_magenta")
+        int_table.add_column("Status", style="green")
+        int_table.add_column("Speed", style="yellow")
+        
+        for iface in interfaces:
+            status_color = "green" if iface["status"] == "Up" else "red"
+            int_table.add_row(
+                iface["name"],
+                iface["ip"],
+                f"[{status_color}]{iface['status']}[/]",
+                iface["speed"]
+            )
+        
+        console.print(Panel(int_table, title="🌐 Network Interfaces", border_style="cyan"))
+    else:
+        console.print(Panel("Network interface information not available", title="🌐 Network Interfaces", border_style="dim"))
+    
+    # Add timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    console.print(f"\n[dim]Last updated: {timestamp}[/]")
+    
+    # Show dependency status if needed
+    if not SYSTEM_DEPS_AVAILABLE:
+        console.print("")
+        console.print(warning_panel(
+            "Enhanced system monitoring unavailable - Install psutil and speedtest-cli for full functionality: pip install psutil speedtest-cli"
+        ))
+
 @app.command()
-def dashboard():
-    """📊 Launch interactive dashboard (experimental)."""
-    console.print(create_gradient_panel("Interactive Dashboard", "Real-time network monitoring", "info"))
-    console.print(warning_panel("Dashboard mode is experimental and under development"))
-    
-    # This would be where we'd implement a live TUI dashboard
-    # For now, show a preview of what it could look like
-    
-    layout = Layout()
-    layout.split_column(
-        Layout(create_gradient_panel("System Status", "All systems operational", "success"), size=3),
-        Layout(create_gradient_panel("Recent Activity", "Last 5 commands executed", "info"), size=10),
-    )
-    
-    console.print(layout)
-    console.print("\n[dim]Press Ctrl+C to exit dashboard mode[/]")
-    
+def dashboard(
+    auto_refresh: bool = typer.Option(False, "--refresh", "-r", help="Auto-refresh dashboard every 30 seconds"),
+    speed_test: bool = typer.Option(True, "--speed/--no-speed", help="Include internet speed test (default: True)")
+):
+    """📊 Display comprehensive system dashboard with network information."""
     try:
-        time.sleep(2)  # Simulate dashboard activity
+        if auto_refresh:
+            console.print(create_gradient_panel("🔄 Auto-Refresh Dashboard", "Refreshing every 30 seconds. Press Ctrl+C to exit", "info"))
+            while True:
+                create_system_dashboard()
+                console.print("\n[dim]Waiting 30 seconds for next refresh...[/]")
+                time.sleep(30)
+                console.clear()
+        else:
+            create_system_dashboard()
     except KeyboardInterrupt:
         console.print("\n[yellow]Dashboard closed[/]")
 
@@ -1395,6 +1711,7 @@ def main(
     
     [bold cyan]Quick Start:[/]
     
+    • dashboard                 - Show system dashboard
     • ping google.com           - Test connectivity
     • dns example.com           - Resolve DNS records  
     • http https://api.github.com - Test HTTP endpoints
@@ -1403,6 +1720,7 @@ def main(
     
     [bold cyan]Features:[/]
     
+    • System dashboard with IP addresses and network speeds
     • Beautiful colored output with progress indicators
     • Export results to JSON/CSV files
     • Batch operations from file
@@ -1413,9 +1731,20 @@ def main(
     """
     pass
 
+@app.command()
+def startup():
+    """🚀 Show startup dashboard with system information."""
+    create_system_dashboard()
+    console.print(f"\n[dim]Run 'python3 neoTUI.py --help' to see all available commands[/]")
+
 if __name__ == "__main__":
     try:
-        app()
+        # Show dashboard on startup if no command specified
+        if len(sys.argv) == 1:
+            create_system_dashboard()
+            console.print(f"\n[dim]Run 'python3 neoTUI.py --help' to see all available commands[/]")
+        else:
+            app()
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user[/]")
         raise typer.Exit(code=130)
